@@ -1,0 +1,39 @@
+NovaForge/
+│── README.md
+│── LICENSE
+│── .gitignore
+│── package.json
+│── index.js
+└── src/
+    └── app.js
+const fs = require("fs");
+const path = require("path");
+
+const projectName = "NovaForge";
+
+const folders = [
+  "src",
+  "docs",
+  "tests",
+  "config"
+];
+
+folders.forEach(folder => {
+  const folderPath = path.join(projectName, folder);
+  fs.mkdirSync(folderPath, { recursive: true });
+});
+
+fs.writeFileSync(
+  path.join(projectName, "README.md"),
+  `# ${projectName}
+
+A modern starter template generated automatically.
+`
+);
+
+fs.writeFileSync(
+  path.join(projectName, "src", "app.js"),
+  `console.log("Welcome to NovaForge!");`
+);
+
+console.log("Project created successfully!");
