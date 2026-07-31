@@ -18,11 +18,6 @@ const folders = [
   "config"
 ];
 
-folders.forEach(folder => {
-  const folderPath = path.join(projectName, folder);
-  fs.mkdirSync(folderPath, { recursive: true });
-});
-
 fs.writeFileSync(
   path.join(projectName, "README.md"),
   `# ${projectName}
@@ -30,6 +25,11 @@ fs.writeFileSync(
 A modern starter template generated automatically.
 `
 );
+folders.forEach(folder => {
+  const folderPath = path.join(projectName, folder);
+  fs.mkdirSync(folderPath, { recursive: true });
+});
+
 
 fs.writeFileSync(
   path.join(projectName, "src", "app.js"),
