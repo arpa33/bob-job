@@ -1,39 +1,23 @@
-NovaForge/
-│── README.md
-│── LICENSE
-│── .gitignore
-│── package.json
-│── index.js
-└── src/
-    └── app.js
-const fs = require("fs");
-const path = require("path");
 
-const projectName = "NovaForge";
+### Python Code (`main.py`)
+```python
+from datetime import datetime
 
-const folders = [
-  "src",
-  "docs",
-  "tests",
-  "config"
-];
+class NebulaForge:
+    def __init__(self):
+        self.name = "NebulaForge"
+        self.version = "1.0.0"
 
-fs.writeFileSync(
-  path.join(projectName, "README.md"),
-  `# ${projectName}
+    def start(self):
+        print(f"{self.name} v{self.version}")
+        print("Automation Engine Started")
+        print(f"Started at: {datetime.now()}")
 
-A modern starter template generated automatically.
-`
-);
-folders.forEach(folder => {
-  const folderPath = path.join(projectName, folder);
-  fs.mkdirSync(folderPath, { recursive: true });
-});
+    def run_task(self, task):
+        print(f"Running task: {task}")
+        print("Task completed successfully.")
 
-
-fs.writeFileSync(
-  path.join(projectName, "src", "app.js"),
-  `console.log("Welcome to NovaForge!");`
-);
-
-console.log("Project created successfully!");
+if __name__ == "__main__":
+    app = NebulaForge()
+    app.start()
+    app.run_task("System Initialization")
