@@ -1,23 +1,187 @@
+nexora/
+├── src/
+│   ├── commands/
+│   │   ├── create.ts
+│   │   ├── clone.ts
+│   │   └── configure.ts
+│   ├── core/
+│   │   ├── github.ts
+│   │   ├── repository.ts
+│   │   └── validator.ts
+│   ├── templates/
+│   │   └── default.ts
+│   └── index.ts
+├── tests/
+│   └── repository.test.ts
+├── .env.example
+├── .gitignore
+├── package.json
+├── tsconfig.json
+└── README.md
+import { Octokit } from "@octokit/rest";
 
-### Python Code (`main.py`)
-```python
-from datetime import datetime
+interface RepositoryConfig {
+  name: string;
+  description?: string;
+  private?: boolean;
+  autoInit?: boolean;
+  gitignoreTemplate?: string;
+  licenseTemplate?: string;
+}
 
-class NebulaForge:
-    def __init__(self):
-        self.name = "NebulaForge"
-        self.version = "1.0.0"
+class Nexora {
+  private github: Octokit;
 
-    def start(self):
-        print(f"{self.name} v{self.version}")
-        print("Automation Engine Started")
-        print(f"Started at: {datetime.now()}")
+  constructor(token: string) {
+    if (!token) {
+      throw new Error("GitHub token is required.");
+    }
 
-    def run_task(self, task):
-        print(f"Running task: {task}")
-        print("Task completed successfully.")
+    this.github = new Octokit({
+      auth: token,
+      userAgent: "Nexora/1.0.0",
+    });
+  }
 
-if __name__ == "__main__":
-    app = NebulaForge()
-    app.start()
-    app.run_task("System Initialization")
+  async createRepository(config: RepositoryConfig) {
+    this.validate(config);
+
+    const { data } = await this.github.repos.createForAuthenticatedUser({
+      name: config.name,
+      description: config.description ?? "",
+      private: config.private ?? false,
+      auto_init: config.autoInit ?? true,
+      gitignore_template: config.gitignoreTemplate,
+      license_template: config.licenseTemplate,
+    });
+
+    return {
+      id: data.id,
+      name: data.name,
+      url: data.html_url,
+      cloneUrl: data.clone_url,
+      visibility: data.private ? "private" : "public",
+    };
+  }
+
+  async repositoryExists(
+    owner: string,
+    repository: string
+  ): Promise<boolean> {
+    try {
+      await this.github.repos.get({
+        owner,
+        repo: repository,
+      });
+
+      return true;
+    } catch (error: any) {
+      if (error.status === 404) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
+
+  private validate(config: RepositoryConfig) {
+    if (!/^[a-zA-Z0-9._-]+$/.test(config.name)) {
+      throw new Error(
+        "Repository name contains unsupported characters."
+      );
+    }
+
+    if (config.name.length > 100) {
+      throw new Error(
+        "Repository name cannot exceed 100 characters."
+      );
+    }
+  }
+}
+
+export default Nexora;
+#!/usr/bin/env node
+
+import "dotenv/config";
+import { Command } from "commander";
+import Nexora from "./core/repository";
+
+const program = new Command();
+
+program
+  .name("nexora")
+  .description("Professional GitHub repository automation CLI")
+  .version("1.0.0");
+
+program
+  .command("create")
+  .description("Create a new GitHub repository")
+  .requiredOption("-n, --name <name>", "Repository name")
+  .option("-d, --description <description>", "Repository description")
+  .option("-p, --private", "Create a private repository")
+  .action(async (options) => {
+    try {
+      const token = process.env.GITHUB_TOKEN;
+
+      if (!token) {
+        throw new Error(
+          "GITHUB_TOKEN is missing from environment variables."
+        );
+      }
+
+      const nexora = new Nexora(token);
+
+      const repository = await nexora.createRepository({
+        name: options.name,
+        description: options.description,
+        private: options.private ?? false,
+        autoInit: true,
+      });
+
+      console.log("\nRepository created successfully.\n");
+      console.log(`Name:   ${repository.name}`);
+      console.log(`URL:    ${repository.url}`);
+      console.log(`Clone:  ${repository.cloneUrl}`);
+      console.log(`Type:   ${repository.visibility}\n`);
+    } catch (error: any) {
+      console.error(`\nError: ${error.message}\n`);
+      process.exit(1);
+    }
+  });
+
+program.parseAsync();
+{
+  "name": "nexora",
+  "version": "1.0.0",
+  "description": "Professional GitHub repository automation CLI",
+  "main": "dist/index.js",
+  "bin": {
+    "nexora": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.0",
+    "commander": "^14.0.0",
+    "dotenv": "^17.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "eslint": "^9.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  }
+}
+GITHUB_TOKEN=your_github_personal_access_token
+npm install
+npm run build
+npx nexora create \
+  --name my-new-project \
+  --description "A professional GitHub project" \
+  --private
